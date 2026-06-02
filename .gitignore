@@ -1,0 +1,11 @@
+# Generated static site output
+public/
+resources/_gen/
+
+# Local cache and lock files
+.hugo_build.lock
+hugo_cache/
+
+# Operating system files
+.DS_Store
+Thumbs.db
