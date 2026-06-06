@@ -1,6 +1,6 @@
 baseURL = 'https://betorvs.github.io/'
 locale = 'en-us'
-title = 'Code & Infra by Roberto Scudeller'
+title = "Roberto Scudeller's Journals: Code & Infra"
 theme = 'maverick'
 
 [permalinks]
