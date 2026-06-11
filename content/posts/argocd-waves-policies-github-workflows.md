@@ -2,7 +2,7 @@
 date = '2026-06-07T21:54:31-03:00'
 author = 'Roberto Scudeller'
 title = 'First applications, sync waves, policies and basic GitHub workflows'
-tags = [ 'ArgoCD', 'kubernetes', 'waves', 'validating-policies', 'GitHub-Workflows', '' ]
+tags = [ 'ArgoCD', 'kubernetes', 'waves', 'validating-policies', 'GitHub-Workflows']
 +++
 
 We do have our Kubernetes cluster up and running and our main git repository to start syncing our applications, but why should we do it in this way?
