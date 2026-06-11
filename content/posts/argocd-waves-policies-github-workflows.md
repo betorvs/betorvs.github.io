@@ -1,0 +1,38 @@
++++
+date = '2026-06-07T21:54:31-03:00'
+author = 'Roberto Scudeller'
+title = 'First applications, sync waves, policies and basic GitHub workflows'
+tags = [ 'ArgoCD', 'kubernetes', 'waves', 'validating-policies', 'GitHub-Workflows']
++++
+
+We do have our Kubernetes cluster up and running and our main git repository to start syncing our applications, but why should we do it in this way?
+
+## GitOps framework
+
+At **AS Inc Example** we discussed different experiences that we had in the past about how to deploy in production environments and what should be our choice, not because we want to be cool in our Tech Radar, but we want to solve a real problem. 
+Using a git repository as source of truth is the main pillar and this was not in discussion, everyone agreed, what was the main topic was about reconciliation and syncing. We talked about some challenges trying to use a push approach, like from a continuous integration job to our cluster. One of the main drawbacks is that we should have a secret in this external tool with access to our cluster and all security colleagues were scared about what could happen in a leak incident. Of course, this is not what we want and this method can have some good use cases, e.g. Terraform is one example of a declarative and push approach that I can remember. 
+
+We can enumerate a list of benefits from this framework, like security, auditing, consistency and easy rollbacks, but what caught us was four eyes principle, which is that we should always create pull (merge) requests to our source of truth and this should be reviewed by our pairs. The trade-off is we can lose speed in our changes in case or a few people working or during a busy season. Having good feedback before applying our change to production is priceless. Finding a mistake before it happens is the main benefit and we don't have any doubt about it. 
+
+As we already mentioned in our past post, we decided to use ArgoCD as our main tool. 
+From day 0 we decided to plan our applications in such a way this will become easy to restore in a Disaster recovery drill, and we would achieve it using Sync Waves. This is an annotation inside ArgoCD custom resources as `Applications`, `ApplicationSets`, which we can enumerate an order of events that ArgoCD controller should follow. 
+
+## How to organize your deployment waves?
+
+Using this annotation in `Application`, `argocd.argoproj.io/sync-wave`, and knowing that all applications without it will be “0” for ArgoCD, we decided to start from 0. That means, we assign the responsibility for your correct order to any engineer as we follow our principle that  “You build it, You run it”, this is something that everyone should think from day 0. Disaster recovery drills should not be a big deal if you plan in advance and every company will have this in the near future, then why should we think about this only when it becomes a ticket assigned to a platform engineer? 
+
+Following it, our bootstrap application it's a wave 0, follow by projects 1 and main applications is 2, and first real applications deployed in our cluster is 3, e.g. Cert Manager, Dvorah (Image Kubernetes Admission Controller), Falco (Runtime Security) and Kubernetes Validating Admission Policies.
+
+You can start thinking about it, but is this enough? No. We know it, but this was the minimum from security perspective, and the platform team added Cert Manager as this is required to create certificates for our Image admission controller as Kubernetes Control plane will connect to it using a webhook with TLS. We will post about why we choose our admission controller in a coming post. 
+
+## Preferred deployment and GitHub Workflows
+
+We host our code in GitHub and the logic is to use GitHub Workflows as our CI/CD tool. In our main central repository, we just added our first validation check, this is a draft that should check for every ArgoCD Application and make sure we do not have any new application in the `default` project. We will revisit it in the future and decide how to restrict this project to make sure it's safe. Returning to our main topic, this is our first version of how to validate changes in our repository. Maybe we should look for thousands of GitHub Actions in the wild to get a very powerful one, but this is a “perfect” ticket, and the main downside is we spend a long time testing many use cases that we are not sure will be our cases. Starting small with a simple bash script gives us velocity (as I'm a team of one guy running a fictional empire, velocity wins over over-engineering), as our repository grows and we  know more use cases, we will have better input for a ticket in the future about how to validate our central git repository. Using inline bash script inside GitHub Steps is very tricky and you should remember that they always run with `-eo pipefail` and this can cause some issues when you are looping through a list of files to check, such as a `grep` command that returns a non-zero exit code because a string wasn't present. 
+
+Another important point here is how to organize our deployments, as we mentioned in our previous post, we allow raw manifests, but using raw manifests for some cases is okay, but we should version what we are going to deploy to our environments. Think like this, ArgoCD raw manifests is a temporary solution until we need to scale it and then we are going to use ArgoCD Helm charts, but what about our Kubernetes Validating Admission Policies? Discussing it with the security team that will own it, we talk about using GitHub Pages to host Helm charts or using OCI (Open Container Initiative) helm chart. GitHub Pages are very nice, we like it, and we are using it right now, but generating Helm index YAML file and placing it with others charts together and versioning it using tags is useful but it will end up with a messy and crowded repository with many charts. Just check some open source repositories that have more than one Helm chart together and check it again after a high number of versions. If you are using it and do not have any cons, keep it. As we have this opportunity, we decided to go with OCI and this is very easy to deploy using GitHub and it will allow us to use the same logic for private Helm charts as well. For this version, our security team created a separate repository to host their Helm chart, where they imported some community Validating Admission policies and wrote a template that will create a Validating Admission Policy binding for each policy enforcing a label that will be required by all applications. We will share this repository at the end of this post. 
+
+Kubernetes Validating Admission policies are based on Common Expression Language (CEL) and are much easier to read if you compare with Rego language (used in OPA gateway for instance). This is a stable feature since Kubernetes 1.30 and should not only cover security context cases, we can use it for all kinds of validations in Kubernetes. 
+
+To conclude our post, we achieve a good start pointing, having Cert Manager and security in place, now we should start thinking about secrets management, internal development platforms and so on. Keep an eye here and check our next posts about this.
+
+These post still relate with this repository [argocd-app-of-apps-repo](https://github.com/betorvs/as-corp-ex-argocd-repo) and this tag [blog_post_02](https://github.com/betorvs/as-corp-ex-argocd-repo/tree/blog_post_02) just in case you are accessing it long after I originally posted it. And this is a [Binding Kubernetes Admission Policies repository](https://github.com/betorvs/binding-validating-admission-policies).
