@@ -105,6 +105,9 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    concurrency:
+      cancel-in-progress: true
+      group: ${{ github.workflow }}-${{ github.ref }}
     needs: build
     steps:
       - name: Deploy to GitHub Pages
